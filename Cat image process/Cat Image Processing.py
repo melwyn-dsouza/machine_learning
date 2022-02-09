@@ -14,7 +14,7 @@ plt.rcParams['savefig.dpi'] = 300
 def main():
     """Task 1 - display coloured image"""
     rgb_image = cv.imread("cat.png")
-    display("Coloured CAT", rgb_image)
+    # display("Coloured CAT", rgb_image)
     
     """display grey scaled image """
     grey_image = cv.cvtColor(rgb_image, cv.COLOR_BGR2GRAY)
@@ -35,22 +35,23 @@ def main():
     gauss_blur(rgb_image, 2, 7, "RGB")
     gauss_blur(grey_image, 4, 5, "Grey")
     
-    rgb_x = x_derivatives_gauss(rgb_image, 1, 7, "RGB")
-    grey_x = x_derivatives_gauss(grey_image, 1, 7, "Grey")
-    
-    rgb_y = y_derivatives_gauss(rgb_image, 1, 7, "RGB")
-    grey_y = y_derivatives_gauss(grey_image, 1, 7, "Grey")
-    
+    rgb_x = x_derivatives_gauss(rgb_image, 2, "RGB")
+    rgb_y = y_derivatives_gauss(rgb_image, 2, "RGB")
     direction_independent_gauss(rgb_x, rgb_y, "RGB")
+    
+    grey_x = x_derivatives_gauss(grey_image, 2, "Grey")
+    grey_y = y_derivatives_gauss(grey_image, 3, "Grey")
     direction_independent_gauss(grey_x, grey_y, "Grey")
     
     fourier_transform(grey_image)
-    
+        
 def display(windowName, image, save = True):
     cv.imshow(windowName, image)
     cv.waitKey(0)
     if save:
         savename  = windowName+'.jpg'
+        if np.max(image) == 1:
+            image = image*255
         cv.imwrite(savename, image)
     cv.destroyAllWindows()
  
@@ -63,14 +64,14 @@ def positive_blur(image, den, window):
 
 def sobel_filter(image, window):
     """Task 2 - sobel fileter for vertical and horizontal edges"""
-    name = window + " Vertical Edges"
+    name = window + " Sobel Vertical Edges"
     vertical_filter = np.array([[1,0,-1],
                                 [2,0,-2],
                                 [1,0,-1]])
     vertical_image = cv.filter2D(image, -1, vertical_filter)
     display (name, vertical_image)
     
-    name = window + " Horizontal Edges"
+    name = window + " Sobel Horizontal Edges"
     horizontal_filter = np.array([[1,2,1],
                                   [0,0,0],
                                   [-1,-2,-1]])
@@ -104,35 +105,52 @@ def gauss_blur(image, sigma, filter_size, window):
     plt.show()
     display(name, smooth_image)
 
-def x_derivatives_gauss(image, sigma, filter_size, window):    
+def x_derivatives_gauss(image, sigma, window):    
     #deriveatives Guassian edge detecting filter
-    name = window+ " X_dervivative CAT"
-    x,y = np.meshgrid(np.arange(0,filter_size), np.arange(0,filter_size))
-    x_derv_gauss = (np.exp(-((x-np.mean(x))**2 + (y-np.mean(y))**2)/(2*(sigma**2))) * (-(x-np.mean(x)))) / (2*np.pi*(sigma**4))
+    name = window+ " gauss x dervivative CAT"
+    size = 3*sigma
+    x, y = np.meshgrid(np.arange(-size, size+1), 
+                       np.arange(-size, size+1))
+    x_derv_gauss = -x*np.exp(-(x**2 + y**2)/(2*sigma**2))/(2*np.pi*sigma**4)
     x_derv_image = cv.filter2D(image, -1, x_derv_gauss)
-    plt.imshow(x_derv_gauss)
-    plt.title("X_dervivative Kernel")
+    
+    ax = plt.axes(projection='3d')
+    ax.plot_surface(x, y, x_derv_gauss)
+    plt.title("Cat Kernel x %s"%sigma)
     plt.show()
-    display(name, x_derv_image)
-    return x_derv_image
+    
+    plt.imshow(x_derv_gauss)
+    plt.title("X_dervivative Kernel with sigma %s"% sigma)
+    plt.show()  
+    display(name, (x_derv_image/np.max(x_derv_image)))
+    
+    return (x_derv_image/np.max(x_derv_image))
 
-def y_derivatives_gauss(image, sigma, filter_size, window):    
+def y_derivatives_gauss(image, sigma, window):    
     #deriveatives Guassian edge detecting filter
-    name = window+ " Y_dervivative CAT"
-    x,y = np.meshgrid(np.arange(0,filter_size), np.arange(0,filter_size))
-    y_derv_gauss = (np.exp(-((x-np.mean(x))**2 + (y-np.mean(y))**2)/(2*(sigma**2))) * (-(y-np.mean(y)))) / (2*np.pi*(sigma**4))
+    name = window+ " gauss y dervivative CAT"
+    size = 3*sigma
+    x, y = np.meshgrid(np.arange(-size, size+1), 
+                       np.arange(-size, size+1))
+    y_derv_gauss = -y*np.exp(-(x**2 + y**2)/(2*sigma**2))/(2*np.pi*sigma**4)
     y_derv_image = cv.filter2D(image, -1, y_derv_gauss)
+    
+    ax = plt.axes(projection='3d')
+    ax.plot_surface(x, y, y_derv_gauss)
+    plt.title("Cat Kernel x %s"%sigma)
+    plt.show()
+    
     plt.imshow(y_derv_gauss)
     plt.title("Y_dervivative Kernel")
     plt.show()
-    display(name, y_derv_image)
-    return y_derv_image
+    display(name, (y_derv_image/np.max(y_derv_image)))
+    return (y_derv_image/np.max(y_derv_image))
 
 def direction_independent_gauss(x_derivative, y_derivative, window):
     name = window + " Direction Independent CAT"
     #Direction Independent edge detection using gaussian derivatives
     dir_independent_edges = (x_derivative**2) + (y_derivative**2)
-    display(name, dir_independent_edges)
+    display(name, dir_independent_edges/ np.max(dir_independent_edges))
 
 def fourier_transform(image):
 
